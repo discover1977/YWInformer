@@ -1,0 +1,79 @@
+{
+	"fact": {
+		"condition": "wet-snow",
+		"daytime": "d",
+		"feels_like": -5,
+		"humidity": 100,
+		"icon": "ovc_ra_sn",
+		"obs_time": 1644498000,
+		"polar": false,
+		"pressure_mm": 740,
+		"pressure_pa": 986,
+		"season": "winter",
+		"temp": -1,
+		"temp_water": 0,
+		"wind_dir": "sw",
+		"wind_gust": 7.6,
+		"wind_speed": 3
+	},
+	"forecast": {
+		"date": "2022-02-10",
+		"date_ts": 1644440400,
+		"moon_code": 13,
+		"moon_text": "moon-code-13",
+		"parts": [
+			{
+				"condition": "light-snow",
+				"daytime": "n",
+				"feels_like": -7,
+				"humidity": 88,
+				"icon": "ovc_-sn",
+				"part_name": "evening",
+				"polar": false,
+				"prec_mm": 0.3,
+				"prec_period": 360,
+				"prec_prob": 90,
+				"pressure_mm": 741,
+				"pressure_pa": 987,
+				"temp_avg": -1,
+				"temp_max": 0,
+				"temp_min": -1,
+				"temp_water": 0,
+				"wind_dir": "w",
+				"wind_gust": 9.5,
+				"wind_speed": 4.6
+			},
+			{
+				"condition": "light-snow",
+				"daytime": "n",
+				"feels_like": -6,
+				"humidity": 91,
+				"icon": "ovc_-sn",
+				"part_name": "night",
+				"polar": false,
+				"prec_mm": 0.6,
+				"prec_period": 360,
+				"prec_prob": 30,
+				"pressure_mm": 742,
+				"pressure_pa": 989,
+				"temp_avg": -1,
+				"temp_max": -1,
+				"temp_min": -1,
+				"temp_water": 0,
+				"wind_dir": "sw",
+				"wind_gust": 8.4,
+				"wind_speed": 4.1
+			}
+		],
+		"sunrise": "08:17",
+		"sunset": "17:07",
+		"week": 6
+	},
+	"info": {
+		"lat": 59.193938,
+		"lon": 37.948628,
+		"url": "https://yandex.ru/pogoda/29383?lat=59.193938&lon=37.948628"
+	},
+	"now": 1644499023,
+	"now_dt": "2022-02-10T13:17:03.777721Z"
+}

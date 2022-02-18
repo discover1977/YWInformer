@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta name='viewport' content='width=device-width' charset="utf-8">
+</head>
+<style type="text/css">
+	html,
+	body {
+		height: 100%;
+		margin: 0px;
+		padding: 0px;
+	}
+</style>
+
+<body>
+	<form class="form" action="/param" method="post">
+		<table class="iksweb">
+			<tbody>
+				<tr>
+					<td>AP SSID:</td>
+					<td><input type='text' name="ap_ssid" /></td>
+				</tr>
+				<tr>
+					<td>AP PASS:</td>
+					<td><input type="password" name="ap_pass" /></td>
+				</tr>
+				<tr>
+					<td>City:</td>
+					<td><input type="text" name="city" /></td>
+				</tr>
+				<tr>
+					<td>Latitude:</td>
+					<td><input type='text' name="lat" /></td>
+				</tr>
+				<tr>
+					<td>Longitude:</td>
+					<td><input type='text' name="lon" /></td>
+				</tr>
+				<tr>
+					<td>hemisphere:</td>
+					<td><input type='text' name="hemisphere" /></td>
+				</tr>
+				<tr>
+					<td>Time zone</td>
+					<td><input type='range' name="time_zone" value="3" min="-12" max="12"
+							oninput="this.nextElementSibling.value = this.value" /><output>3</output></td>
+				</tr>
+				<tr>
+					<td>Update interval:</td>
+					<td><input type='range' name="update_interval" value="1" min="1" max="6"
+							oninput="this.nextElementSibling.value = this.value" /><output>1</output></td>
+				</tr>
+				<tr>
+					<td>API key:</td>
+					<td><input type='text' name="api_key" /></td>
+				</tr>
+				<tr>
+					<td>Test data:</td>
+					<td><input type='checkbox' name="test_data" /></td>
+				</tr>
+				<tr>
+					<td colspan="2"><input type="submit" value="Confirm"></td>
+				</tr>
+			</tbody>
+		</table>
+	</form>
+	<a href='/update'><button>Firmware...</button></a>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+{
+	"city": "",
+	"lat": 0.0,
+	"lon": 0.0,
+	"test_data": true,
+	"api_key": "",
+	"update_interval": 1,
+	"time_zone": 3,
+	"ap_ssid": "",
+	"ap_pass": "",
+	"hemisphere": "north"
+}
