@@ -34,6 +34,7 @@
 
 const char *ntpServer = "0.europe.pool.ntp.org";
 
+
 enum alignment
 {
   LEFT,
