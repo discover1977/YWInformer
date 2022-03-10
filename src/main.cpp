@@ -34,7 +34,6 @@
 
 const char *ntpServer = "0.europe.pool.ntp.org";
 
-
 enum alignment
 {
   LEFT,
@@ -50,7 +49,7 @@ enum icon_size
 
 uint8_t currentHour = 0, currentMin = 0, currentSec = 0, eventCnt = 0;
 long sleepDuration = 60; // Sleep time in minutes, aligned to the nearest minute boundary, so if 30 will always update at 00 or 30 past the hour
-uint8_t wakeupHour = 5;  // Don't wakeup until after 04:00 to save battery power
+uint8_t wakeupHour = 5;  // Don't wakeup until after 05:00 to save battery power
 uint8_t sleepHour = 1;   // Sleep after 01:00 to save battery power
 long startTime = 0;
 long sleepTimer = 0;
@@ -59,8 +58,8 @@ long delta = 30; // ESP32 rtc speed compensation, prevents display at xx:59:yy a
 #define L_SIZE 250
 #define S_SIZE 100
 
-#define Large 20 // For icon drawing
-#define Small 8  // For icon drawing
+// #define Large 20 // For icon drawing
+// #define Small 8  // For icon drawing
 
 Web_Server server;
 FTP_Server ftp;
@@ -81,6 +80,7 @@ bool decode_json(char *jsonStr, int size);
 bool getWeather();
 void display_weather();
 void display_info();
+bool getIcon(String iconName);
 String convert_unix_time(int unix_time);
 void draw_battery(int x, int y);
 void draw_RSSI(int x, int y, int rssi);
@@ -90,7 +90,7 @@ void draw_wind_section(int x, int y, String dir, float speed, float gust, int Cr
 void draw_thp_section(uint16_t x, uint16_t y);
 void draw_sun_section(uint16_t x, uint16_t y);
 void draw_moon_section(uint16_t x, uint16_t y, String hemisphere);
-void draw_thp_forecasr_section(uint16_t x, uint16_t y, uint8_t part);
+void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part);
 uint8_t *load_file(String fileName);
 void draw_conditions_section(int x, int y, String IconName, uint8_t forecast_part, bool IconSize);
 void arrow(int x, int y, int asize, float aangle, int pwidth, int plength);
@@ -249,11 +249,11 @@ void setup()
             }
             if (_rxWeather)
             {
-              stop_WiFi();
               epd_poweron();
               epd_clear();
               display_info();
               display_weather();
+              stop_WiFi();
               edp_update();
               delay(5000);
               epd_poweroff_all();
@@ -307,9 +307,42 @@ void display_info()
 {
   setFont(OpenSans12B);
   drawString(10, 15, param.city, LEFT);
-  drawString(400, 15, convert_unix_time(weather.now /* + (param.time_zone * 3600)*/), LEFT);
+  drawString(400, 15, convert_unix_time(weather.now), LEFT);
   draw_battery(680, 30);
   draw_RSSI(900, 35, wifi_signal);
+}
+
+bool getIcon(String iconName)
+{
+  HTTPClient _http;
+  String _host = "yastatic.net";
+  String _uri = "/weather/i/icons/funky/dark/";
+  WiFiClient _client;
+  _client.stop();
+
+  _http.begin(_client, _host, 80, String(_uri + iconName + ".svg"), true);
+  int _httpCode = _http.GET();
+
+  if (_httpCode == HTTP_CODE_OK)
+  {
+    int _size = _client.available();
+    log_i("icon size: %d", _size);
+
+    File f = SPIFFS.open(String("/" + iconName + ".svg"), FILE_WRITE);
+    uint8_t *_data;
+    _data = (uint8_t *)ps_calloc(sizeof(uint8_t), _size);
+    _client.readBytes(_data, _size);
+    f.write(_data, _size);
+    f.close();
+    log_i("icon file saved!");
+    free(_data);
+    return true;
+  }
+  else
+  {
+    log_i("get icon error: %s(%d)", _http.errorToString(_httpCode).c_str(), _httpCode);
+    return false;
+  }
 }
 
 String convert_unix_time(int unix_time)
@@ -371,11 +404,14 @@ void draw_RSSI(int x, int y, int rssi)
 
 void display_fact_weather()
 {
-  draw_wind_section(800, 180, weather.fact.wind_dir, weather.fact.wind_speed, weather.fact.wind_gust, 100, true);
-  draw_thp_section(480, 70);
+  draw_wind_section(800, 200, weather.fact.wind_dir, weather.fact.wind_speed, weather.fact.wind_gust, 100, true);
+  setFont(OpenSans18B);
+  weather.fact.season.toUpperCase();
+  drawString(EPD_WIDTH / 2, 60, weather.fact.season, CENTER);
+  draw_thp_section(480, 90);
   draw_conditions_section(20, 50, weather.fact.icon, 0, LargeIcon);
-  draw_sun_section(370, 270);
-  draw_moon_section(490, 180, param.hemisphere);
+  draw_sun_section(370, 290);
+  draw_moon_section(510, 200, param.hemisphere);
 }
 
 void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure section
@@ -408,8 +444,8 @@ void draw_sun_section(uint16_t x, uint16_t y)
   }
 
   setFont(OpenSans10B);
-  drawString(x - r, y + 10, weather.forecast.sunrise, CENTER);
-  drawString(x + r, y + 10, weather.forecast.sunset, CENTER);
+  drawString(x - r, y + 20, weather.forecast.sunrise, CENTER);
+  drawString(x + r + 5, y + 20, weather.forecast.sunset, CENTER);
 
   uint8_t *data;
   data = load_file("sunrise.bin");
@@ -426,25 +462,6 @@ void draw_sun_section(uint16_t x, uint16_t y)
     epd_draw_grayscale_image(area, (uint8_t *)data);
     free(data);
   }
-
-  /*setFont(OpenSans12B);
-  drawString(x, y, weather.forecast.sunrise, CENTER);
-  drawString(x, y + 30, weather.forecast.sunset, CENTER);
-  uint8_t *data;
-  data = load_file("sunrise.bin");
-  if (data != NULL)
-  {
-    Rect_t area = {.x = x + 50, .y = y - 15, .width = 47, .height = 35};
-    epd_draw_grayscale_image(area, (uint8_t *)data);
-    free(data);
-  }
-  data = load_file("sunset.bin");
-  if (data != NULL)
-  {
-    Rect_t area = {.x = x + 50, .y = y + 15, .width = 47, .height = 40};
-    epd_draw_grayscale_image(area, (uint8_t *)data);
-    free(data);
-  }*/
 }
 
 int JulianDate(int d, int m, int y)
@@ -525,7 +542,7 @@ void draw_moon_section(uint16_t x, uint16_t y, String hemisphere)
   }
 }
 
-void draw_thp_forecasr_section(uint16_t x, uint16_t y, uint8_t part) // temperature, humidity, pressure section
+void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part) // temperature, humidity, pressure section
 {
   int xOffset = 90;
   setFont(OpenSans18B);
@@ -586,38 +603,48 @@ void draw_conditions_section(int x, int y, String IconName, uint8_t forecast_par
     epd_draw_grayscale_image(area, (uint8_t *)data);
     free(data);
   }
+  else
+  {
+    if (IconSize == LargeIcon)
+      setFont(OpenSans18B);
+    else
+      setFont(OpenSans10B);
+    drawString(x, y, IconName, LEFT);
+    getIcon(IconName);
+  }
 
   if (IconSize == LargeIcon)
   {
     setFont(OpenSans12B);
-    drawString(x + L_SIZE / 2, y + L_SIZE - 8, weather.fact.condition, CENTER);
+    drawString(x + L_SIZE / 2, y + L_SIZE + 5, weather.fact.condition, CENTER);
   }
   else
   {
     setFont(OpenSans8B);
-    drawString(x + S_SIZE / 2, y + S_SIZE - 12, weather.forecast.parts[forecast_part].condition, CENTER);
+    drawString(x + S_SIZE / 2, y + S_SIZE + 5, weather.forecast.parts[forecast_part].condition, CENTER);
     uint8_t prec_prob = weather.forecast.parts[forecast_part].prec_prob;
-    drawString(x + S_SIZE / 2, y + S_SIZE + 10, String(weather.forecast.parts[forecast_part].prec_mm, 1) + "mm", CENTER);
-    drawString(x + S_SIZE / 2, y + S_SIZE + 26, String(prec_prob) + "%", CENTER);
+    drawString(x + S_SIZE / 2, y + S_SIZE + 25, String(weather.forecast.parts[forecast_part].prec_mm, 1) + "mm", CENTER);
+    drawString(x + S_SIZE / 2, y + S_SIZE + 40, String(prec_prob) + "%", CENTER);
   }
 }
 
 void display_forecast_weather()
 {
-  drawLine(0, 350, EPD_WIDTH, 350, Black);
-  drawLine(480, 350, EPD_WIDTH / 2, EPD_HEIGHT, Black);
+  int y = 350;
+  drawLine(0, y, EPD_WIDTH, y, Black);
+  drawLine(EPD_WIDTH / 2, y, EPD_WIDTH / 2, EPD_HEIGHT, Black);
   int xOffSet = EPD_WIDTH / 2;
   for (uint8_t i = 0; i < 2; i++)
   {
     setFont(OpenSans10B);
-    drawString(i * xOffSet + 10, 350, weather.forecast.parts[i].part_name, LEFT);
-    draw_conditions_section(i * xOffSet + 10, 380, weather.forecast.parts[i].icon, i, SmallIcon);
-    draw_wind_section((i * xOffSet) + (i + xOffSet - 90), 445,
+    drawString(i * xOffSet + 10, y, weather.forecast.parts[i].part_name, LEFT);
+    draw_conditions_section(i * xOffSet + 10, y + 20, weather.forecast.parts[i].icon, i, SmallIcon);
+    draw_wind_section((i * xOffSet) + (i + xOffSet - 90), y + 90,
                       weather.forecast.parts[i].wind_dir,
                       weather.forecast.parts[i].wind_speed,
                       weather.forecast.parts[i].wind_gust,
                       60, false);
-    draw_thp_forecasr_section(i * xOffSet + 210, 380, i);
+    draw_thp_forecast_section(i * xOffSet + 210, y + 40, i);
   }
 }
 
@@ -950,7 +977,6 @@ bool getWeather()
   }
   else
   {
-    // TODO Сделать запись в SPIFFS последних данных
     HTTPClient _http;
     String _host = "api.weather.yandex.ru";
     String _uri = "/v2/informers?lat=" + String(param.lat, 6) + "&lon=" + String(param.lon, 6);
@@ -978,7 +1004,7 @@ bool getWeather()
     }
     else
     {
-      log_i("connection failed, error[%d]: %s\n", _httpCode, _http.errorToString(_httpCode).c_str());
+      log_i("\nconnection failed, error[%d]: %s\n", _httpCode, _http.errorToString(_httpCode).c_str());
       _client.stop();
       _http.end();
       return false;
