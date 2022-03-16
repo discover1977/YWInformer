@@ -6,18 +6,30 @@
 #include <SPIFFS.h>
 #include <time.h>
 #include "epd_driver.h"
-#include "opensans8b.h"
-#include "opensans10b.h"
-#include "opensans12b.h"
-#include "opensans18b.h"
-#include "opensans24b.h"
-#include "opensans26b.h"
 #include "lang.h"
 #include "weather_data.h"
 #include "ftp_server.h"
 #include "web_server.h"
 #include "esp_adc_cal.h"
 #include "param_data.h"
+
+#include "osans6b.h"
+#include "osans8b.h"
+#include "osans10b.h"
+#include "osans12b.h"
+#include "osans16b.h"
+#include "osans18b.h"
+#include "osans24b.h"
+#include "osans26b.h"
+#include "osans32b.h"
+#include "osans48b.h"
+
+/*#include "opensans8b.h"
+#include "opensans10b.h"
+#include "opensans12b.h"
+#include "opensans18b.h"
+#include "opensans24b.h"
+#include "opensans26b.h"*/
 
 #define PRINT_PARAM 1
 #define PRINT_DATA 0
@@ -82,9 +94,12 @@ void display_weather();
 void display_info();
 bool getIcon(String iconName);
 String convert_unix_time(int unix_time);
+String get_description_condition(String str);
 void draw_battery(int x, int y);
 void draw_RSSI(int x, int y, int rssi);
 void display_fact_weather();
+String getSeason(String season);
+String get_partName(String pName);
 void display_forecast_weather();
 void draw_wind_section(int x, int y, String dir, float speed, float gust, int Cradius, bool fact);
 void draw_thp_section(uint16_t x, uint16_t y);
@@ -92,10 +107,11 @@ void draw_sun_section(uint16_t x, uint16_t y);
 void draw_moon_section(uint16_t x, uint16_t y, String hemisphere);
 void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part);
 uint8_t *load_file(String fileName);
+void drawStringWithLB(int x, int y, String str, GFXfont font, alignment align);
 void draw_conditions_section(int x, int y, String IconName, uint8_t forecast_part, bool IconSize);
 void arrow(int x, int y, int asize, float aangle, int pwidth, int plength);
 void fillCircle(int x, int y, int r, uint8_t color);
-void drawString(int x, int y, String text, alignment align);
+int drawString(int x, int y, String text, alignment align);
 void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
 void drawCircle(int x0, int y0, int r, uint8_t color, bool fill);
 void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
@@ -143,12 +159,10 @@ void setup()
         param.time_zone = jo["time_zone"].as<int8_t>();
         param.ap_ssid = jo["ap_ssid"].as<char *>();
         param.ap_pass = jo["ap_pass"].as<char *>();
-        param.hemisphere = jo["hemisphere"].as<char *>();
 #if PRINT_PARAM
         log_i("\tcity: %s", param.city.c_str());
         log_i("\tlat: %s", String(param.lat, 6).c_str());
         log_i("\tlon: %s", String(param.lon, 6).c_str());
-        log_i("\themisphere: %s", param.hemisphere.c_str());
         log_i("\ttest_data: %d", param.test_data);
         log_i("\tapi_key: %s", param.api_key.c_str());
         log_i("\tupdate_interval: %d", param.update_interval);
@@ -179,17 +193,26 @@ void setup()
       epd_clear();
       edp_update();
 
-      setFont(OpenSans26B);
-      drawString(30, 20, F("Weather station not configured!"), LEFT);
+      int x = 20;
+      int y = 20;
+      setFont(osans16b);
+      drawString(x, y, F("WEB-метеостанция не настроена!"), LEFT);
+      y += osans16b.advance_y;
 
-      setFont(OpenSans18B);
-      drawString(30, 80, F("Wi-Fi access point  is started!"), LEFT);
+      drawString(x, y, F("Wi-Fi точка доступа запущена!"), LEFT);
+      y += osans16b.advance_y;
 
-      setFont(OpenSans12B);
-      drawString(30, 140, "SSID: " + String(AP_SSID), LEFT);
-      drawString(30, 180, "PASSWORD: " + String(AP_PASS), LEFT);
-      drawString(30, 210, "Settigns page: http://192.168.4.1/index.html", LEFT);
-      drawString(30, 250, "FTP-server is started. user: esp32, pass: esp32", LEFT);
+      drawString(x, y, "SSID: " + String(AP_SSID), LEFT);
+      y += osans16b.advance_y;
+
+      drawString(x, y, "PASSWORD: " + String(AP_PASS), LEFT);
+      y += osans16b.advance_y;
+
+      setFont(osans12b);
+      drawString(x, y, "Адрес страницы настройки: http://192.168.4.1/index.html", LEFT);
+      y += osans12b.advance_y;
+
+      drawString(x, y, "FTP-сервер запущен. user: esp32, pass: esp32", LEFT);
       edp_update();
 
       uint8_t *_data;
@@ -305,7 +328,7 @@ void display_weather()
 
 void display_info()
 {
-  setFont(OpenSans12B);
+  setFont(osans12b);
   drawString(10, 15, param.city, LEFT);
   drawString(400, 15, convert_unix_time(weather.now), LEFT);
   draw_battery(680, 30);
@@ -352,6 +375,69 @@ String convert_unix_time(int unix_time)
   char output[40];
   strftime(output, sizeof(output), "%H:%M %d.%m.%y", now_tm);
   return output;
+}
+
+void drawStringWithLB(int x, int y, String str, GFXfont font, alignment align)
+{
+  int8_t _index = str.indexOf(' ');
+  //_index /= 2;
+  log_i("str: %s, lenght: %d", str.c_str(), str.length());
+  log_i("str.indexOf(\" \"): %d", _index);
+  setFont(font);
+  if (_index == -1)
+  {
+    drawString(x, y + font.advance_y / 2, str, align);
+    return;
+  }
+  String _str = str.substring(0, _index);
+  drawString(x, y, _str, align);
+
+  _str = str.substring(_index + 1, str.length());
+  drawString(x, y + font.advance_y, _str, align);
+}
+
+String get_description_condition(String str)
+{
+  String retStr = str;
+  if (str == "clear")
+    retStr = "Ясно";
+  if (str == "partly-cloudy")
+    retStr = "Малооблачно";
+  if (str == "cloudy")
+    retStr = "Облачно с прояснениями";
+  if (str == "overcast")
+    retStr = "Пасмурно";
+  if (str == "drizzle")
+    retStr = "Моросящий дождь";
+  if (str == "light-rain")
+    retStr = "Небольшой дождь";
+  if (str == "rain")
+    retStr = "Дождь";
+  if (str == "moderate-rain")
+    retStr = "Умеренно сильный дождь";
+  if (str == "heavy-rain")
+    retStr = "Сильный дождь";
+  if (str == "continuous-heavy-rain")
+    retStr = "Длительный сильный дождь";
+  if (str == "showers")
+    retStr = "Ливень";
+  if (str == "wet-snow")
+    retStr = "Дождь со снегом";
+  if (str == "light-snow")
+    retStr = "Небольшой снег";
+  if (str == "snow")
+    retStr = "Снег";
+  if (str == "snow-showers")
+    retStr = "Снегопад";
+  if (str == "hail")
+    retStr = "Град";
+  if (str == "thunderstorm")
+    retStr = "Гроза";
+  if (str == "thunderstorm-with-rain")
+    retStr = "Дождь с грозой";
+  if (str == "thunderstorm-with-hail")
+    retStr = "Гроза с градом";
+  return retStr;
 }
 
 void draw_battery(int x, int y)
@@ -402,66 +488,92 @@ void draw_RSSI(int x, int y, int rssi)
   }
 }
 
+String getSeason(String season)
+{
+  if (season == "summer")
+    return "Лето";
+  if (season == "autumn")
+    return "Осень";
+  if (season == "winter")
+    return "Зима";
+  if (season == "spring")
+    return "Весна";
+  return season;
+}
+
 void display_fact_weather()
 {
-  draw_wind_section(800, 200, weather.fact.wind_dir, weather.fact.wind_speed, weather.fact.wind_gust, 100, true);
-  setFont(OpenSans18B);
-  weather.fact.season.toUpperCase();
-  drawString(EPD_WIDTH / 2, 60, weather.fact.season, CENTER);
-  draw_thp_section(480, 90);
+  draw_wind_section(830, 200, weather.fact.wind_dir, weather.fact.wind_speed, weather.fact.wind_gust, 100, true);
+  setFont(osans18b);
+  drawString(20, 60, getSeason(weather.fact.season), LEFT);
+  draw_thp_section(480, 70);
   draw_conditions_section(20, 50, weather.fact.icon, 0, LargeIcon);
-  draw_sun_section(370, 290);
-  draw_moon_section(510, 200, param.hemisphere);
+  draw_sun_section(480, 330);
+  // draw_moon_section(510, 200, param.hemisphere);
 }
 
 void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure section
 {
-  int xOffset = 150;
-  setFont(OpenSans26B);
-  drawString(x - xOffset / 2, y + 20, String(weather.fact.temp) + " °C", CENTER);
-  setFont(OpenSans18B);
-  drawString(x - xOffset / 2, y + 70, String(weather.fact.feels_like) + " °C", CENTER);
+  int xOffset = 20;
+  setFont(osans48b);
+  drawString(x, y, String(weather.fact.temp) + " °C", CENTER);
+  y += osans26b.advance_y;
 
-  setFont(OpenSans18B);
-  drawString(x + xOffset / 2, y + 20, String(weather.fact.humidity) + " %", CENTER);
-  setFont(OpenSans18B);
-  drawString(x + xOffset / 2, y + 70, String(weather.fact.pressure_mm), CENTER);
+  setFont(osans16b);
+  drawString(x, y, String(weather.fact.feels_like) + " °C", CENTER);
+  y += osans8b.advance_y;
 
-  setFont(OpenSans8B);
-  drawString(x + xOffset / 2, y + 100, "mm/Hg", CENTER);
+  setFont(osans8b);
+  drawString(x, y, "(ощущается)", CENTER);
+  y += osans12b.advance_y;
+
+  setFont(osans24b);
+  drawString(x - xOffset, y, String(weather.fact.humidity) + "%", RIGHT);
+
+  int ex;
+  ex = drawString(x + xOffset, y, String(weather.fact.pressure_mm), LEFT);
+  y += osans10b.advance_y / 2;
+
+  setFont(osans10b);
+  drawString(x + xOffset + ex, y, "mm/Hg", LEFT);
 }
 
 void draw_sun_section(uint16_t x, uint16_t y)
 {
   float x1, y1;
-  int16_t r = 80;
+  int16_t r = 100;
+  y += 25;
 
-  for (int a = 10; a <= 170; a++)
+  bool pen = true;
+  for (uint8_t i = 0; i < 1; i++)
   {
-    x1 = r * cos((a - 180.0) / 180.0 * PI) + x;
-    y1 = r * sin((a - 180.0) / 180.0 * PI) + y;
-    drawPixel(x1, y1, Black);
+    for (float a = 30; a <= 150;)
+    {
+      x1 = (r + i) * cos((a - 180.0) / 180.0 * PI) + x;
+      y1 = (r + i) * sin((a - 180.0) / 180.0 * PI) + y;
+      drawPixel(x1, y1, Black);
+      a += 0.01;
+    }
   }
-
-  setFont(OpenSans10B);
-  drawString(x - r, y + 20, weather.forecast.sunrise, CENTER);
-  drawString(x + r + 5, y + 20, weather.forecast.sunset, CENTER);
 
   uint8_t *data;
   data = load_file("sunrise.bin");
   if (data != NULL)
   {
-    Rect_t area = {.x = x - r - 20, .y = y - 20, .width = 47, .height = 35};
+    Rect_t area = {.x = x - r - 10, .y = y - 50, .width = 47, .height = 35};
     epd_draw_grayscale_image(area, (uint8_t *)data);
     free(data);
   }
   data = load_file("sunset.bin");
   if (data != NULL)
   {
-    Rect_t area = {.x = x + r - 18, .y = y - 20, .width = 47, .height = 40};
+    Rect_t area = {.x = x + r - 35, .y = y - 50, .width = 47, .height = 40};
     epd_draw_grayscale_image(area, (uint8_t *)data);
     free(data);
   }
+  setFont(osans10b);
+  drawString(x - r - 20, y - 35, weather.forecast.sunrise, RIGHT);
+  drawString(x + r + 20, y - 35, weather.forecast.sunset, LEFT);
 }
 
 int JulianDate(int d, int m, int y)
@@ -480,85 +592,23 @@ int JulianDate(int d, int m, int y)
   return j;
 }
 
-double normalized_noon_phase(int d, int m, int y)
-{
-  int j = JulianDate(d, m, y);
-  double Phase = (j + 4.867) / 29.53059;
-  return (Phase - (int)Phase);
-}
-
-void draw_moon_section(uint16_t x, uint16_t y, String hemisphere)
-{
-  time_t now = time(NULL);
-  struct tm *now_utc = gmtime(&now);
-  const int day_utc = now_utc->tm_mday;
-  const int month_utc = now_utc->tm_mon + 1;
-  const int year_utc = now_utc->tm_year + 1900;
-  const int diameter = 75;
-  double Phase = normalized_noon_phase(day_utc, month_utc, year_utc);
-
-  uint8_t *data;
-  data = load_file("moon_new.bin");
-  if (data != NULL)
-  {
-    Rect_t area = {.x = x + diameter / 2, .y = y + diameter / 2, .width = 75, .height = 75};
-    epd_draw_grayscale_image(area, (uint8_t *)data);
-    free(data);
-  }
-
-  hemisphere.toLowerCase();
-  if (hemisphere == "south")
-    Phase = 1 - Phase;
-  // Draw dark part of moon
-  fillCircle(x + diameter - 1, y + diameter, diameter / 2 + 1, Black);
-  const int number_of_lines = 90;
-  for (double Ypos = 0; Ypos <= number_of_lines / 2; Ypos++)
-  {
-    double Xpos = sqrt(number_of_lines / 2 * number_of_lines / 2 - Ypos * Ypos);
-    // Determine the edges of the lighted part of the moon
-    double Rpos = 2 * Xpos;
-    double Xpos1, Xpos2;
-    if (Phase < 0.5)
-    {
-      Xpos1 = -Xpos;
-      Xpos2 = Rpos - 2 * Phase * Rpos - Xpos;
-    }
-    else
-    {
-      Xpos1 = Xpos;
-      Xpos2 = Xpos - 2 * Phase * Rpos + Rpos;
-    }
-    // Draw light part of moon
-    double pW1x = (Xpos1 + number_of_lines) / number_of_lines * diameter + x;
-    double pW1y = (number_of_lines - Ypos) / number_of_lines * diameter + y;
-    double pW2x = (Xpos2 + number_of_lines) / number_of_lines * diameter + x;
-    double pW2y = (number_of_lines - Ypos) / number_of_lines * diameter + y;
-    double pW3x = (Xpos1 + number_of_lines) / number_of_lines * diameter + x;
-    double pW3y = (Ypos + number_of_lines) / number_of_lines * diameter + y;
-    double pW4x = (Xpos2 + number_of_lines) / number_of_lines * diameter + x;
-    double pW4y = (Ypos + number_of_lines) / number_of_lines * diameter + y;
-    drawLine(pW1x, pW1y, pW2x, pW2y, White);
-    drawLine(pW3x, pW3y, pW4x, pW4y, White);
-  }
-}
-
 void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part) // temperature, humidity, pressure section
 {
   int xOffset = 90;
-  setFont(OpenSans18B);
+  setFont(osans18b);
   drawString(x - xOffset / 2, y + 20, String(weather.forecast.parts[part].temp_avg) + " °C", CENTER);
-  setFont(OpenSans12B);
+  setFont(osans12b);
   drawString(x - xOffset / 2, y + 50, String(weather.forecast.parts[part].feels_like) + " °C", CENTER);
 
-  setFont(OpenSans8B);
+  setFont(osans8b);
   drawString(x - xOffset / 2, y + 65, String(weather.forecast.parts[part].temp_max) + " | " + String(weather.forecast.parts[part].temp_min), CENTER);
 
-  setFont(OpenSans10B);
+  setFont(osans10b);
   drawString(x + xOffset / 2, y + 25, String(weather.forecast.parts[part].humidity) + " %", CENTER);
-  setFont(OpenSans10B);
+  setFont(osans10b);
   drawString(x + xOffset / 2, y + 50, String(weather.forecast.parts[part].pressure_mm), CENTER);
 
-  setFont(OpenSans8B);
+  setFont(osans8b);
   drawString(x + xOffset / 2, y + 63, "mm/Hg", CENTER);
 }
 
@@ -606,26 +656,37 @@ void draw_conditions_section(int x, int y, String IconName, uint8_t forecast_par
   else
   {
     if (IconSize == LargeIcon)
-      setFont(OpenSans18B);
+      setFont(osans18b);
     else
-      setFont(OpenSans10B);
+      setFont(osans10b);
     drawString(x, y, IconName, LEFT);
     getIcon(IconName);
   }
 
   if (IconSize == LargeIcon)
   {
-    setFont(OpenSans12B);
-    drawString(x + L_SIZE / 2, y + L_SIZE + 5, weather.fact.condition, CENTER);
+    drawStringWithLB(x + L_SIZE / 2, y + L_SIZE + 5, get_description_condition(weather.fact.condition), osans8b, CENTER);
   }
   else
   {
-    setFont(OpenSans8B);
-    drawString(x + S_SIZE / 2, y + S_SIZE + 5, weather.forecast.parts[forecast_part].condition, CENTER);
+    drawStringWithLB(x + 10, y + S_SIZE - 5, get_description_condition(weather.forecast.parts[forecast_part].condition), osans6b, LEFT);
     uint8_t prec_prob = weather.forecast.parts[forecast_part].prec_prob;
-    drawString(x + S_SIZE / 2, y + S_SIZE + 25, String(weather.forecast.parts[forecast_part].prec_mm, 1) + "mm", CENTER);
-    drawString(x + S_SIZE / 2, y + S_SIZE + 40, String(prec_prob) + "%", CENTER);
+    drawString(x + S_SIZE / 2, y + S_SIZE + 30, String(weather.forecast.parts[forecast_part].prec_mm, 1) + "mm", CENTER);
+    drawString(x + S_SIZE / 2, y + S_SIZE + 45, String(prec_prob) + "%", CENTER);
   }
+}
+
+String get_partName(String pName)
+{
+  if (pName == "night")
+    return "Ночь";
+  if (pName == "morning")
+    return "Утро";
+  if (pName == "day")
+    return "День";
+  if (pName == "evening")
+    return "Вечер";
+  return pName;
 }
 
 void display_forecast_weather()
@@ -636,8 +697,8 @@ void display_forecast_weather()
   int xOffSet = EPD_WIDTH / 2;
   for (uint8_t i = 0; i < 2; i++)
   {
-    setFont(OpenSans10B);
-    drawString(i * xOffSet + 10, y, weather.forecast.parts[i].part_name, LEFT);
+    setFont(osans10b);
+    drawString(i * xOffSet + 10, y + 5, get_partName(weather.forecast.parts[i].part_name), LEFT);
     draw_conditions_section(i * xOffSet + 10, y + 20, weather.forecast.parts[i].icon, i, SmallIcon);
     draw_wind_section((i * xOffSet) + (i + xOffSet - 90), y + 90,
                       weather.forecast.parts[i].wind_dir,
@@ -708,7 +769,7 @@ void draw_wind_section(int x, int y, String dir, float speed, float gust, int Cr
     if (dir != "c")
       arrow(x, y, Cradius - 10, get_wind_angle(dir), 8, 20);
   }
-  setFont(OpenSans8B);
+  setFont(osans8b);
   int dxo, dyo, dxi, dyi;
   drawCircle(x, y, Cradius, Black, false);       // Draw compass circle
   drawCircle(x, y, Cradius + 1, Black, false);   // Draw compass circle
@@ -742,29 +803,29 @@ void draw_wind_section(int x, int y, String dir, float speed, float gust, int Cr
 
   if (fact)
   {
-    setFont(OpenSans12B);
+    setFont(osans12b);
     String wind = dir;
     wind.toUpperCase();
     drawString(x, y - 55, wind, CENTER);
-    setFont(OpenSans24B);
+    setFont(osans24b);
     drawString(x, y - 33, String(speed, 1), CENTER);
-    setFont(OpenSans12B);
+    setFont(osans12b);
     drawString(x, y + 14, String(gust, 1), CENTER);
-    setFont(OpenSans12B);
-    drawString(x, y + 40, "m/s", CENTER);
+    setFont(osans12b);
+    drawString(x, y + 40, "м/с", CENTER);
   }
   else
   {
-    setFont(OpenSans8B);
+    setFont(osans8b);
     String wind = dir;
     wind.toUpperCase();
     drawString(x, y - 35, wind, CENTER);
-    setFont(OpenSans12B);
+    setFont(osans12b);
     drawString(x, y - 17, String(speed, 1), CENTER);
-    setFont(OpenSans8B);
+    setFont(osans8b);
     drawString(x, y + 5, String(gust, 1), CENTER);
-    setFont(OpenSans8B);
-    drawString(x, y + 20, "m/s", CENTER);
+    setFont(osans8b);
+    drawString(x, y + 20, "м/с", CENTER);
   }
 }
 
@@ -1012,7 +1073,7 @@ bool getWeather()
   }
 }
 
-void drawString(int x, int y, String text, alignment align)
+int drawString(int x, int y, String text, alignment align)
 {
   char *data = const_cast<char *>(text.c_str());
   int x1, y1; // the bounds of x,y and w and h of the variable 'text' in pixels.
@@ -1025,6 +1086,7 @@ void drawString(int x, int y, String text, alignment align)
     x = x - w / 2;
   int cursor_y = y + h;
   write_string(&currentFont, data, &x, &cursor_y, displayBuffer);
+  return w;
 }
 
 void fillCircle(int x, int y, int r, uint8_t color)

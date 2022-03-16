@@ -14,7 +14,6 @@ typedef struct
   int8_t time_zone;
   String ap_ssid;
   String ap_pass;
-  String hemisphere;
 } param_t;
 
 #endif /* ifndef PARAM_DATA_H_ */

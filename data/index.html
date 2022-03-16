@@ -10,49 +10,67 @@
 		height: 100%;
 		margin: 0px;
 		padding: 0px;
-		background-color: rgb(33, 67, 87);
+		background-color: rgb(66, 66, 66);
 	}
 
 	.container {
-		max-width: 500px;
-		/* Ширина элемента в пикселах */
-		-padding: 5px;
-		/* Поля вокруг текста */
+		max-width: 400px;
 		margin: auto;
-		/* Выравниваем по центру */
-		-border: 1px solid #ccc;
+		padding: 10px;
+	}
+
+	.header {
+		color: bisque;
+		font-family: 'Courier New', Courier, monospace;
+		text-align: center;
+	}
+
+	.fwbutt {
+		color: rgb(49, 41, 30);
+		font-family: 'Courier New', Courier, monospace;
+		text-align: center;
+		width: 100%;
+	}
+
+	.tab {
+		color: bisque;
+		font-family: 'Courier New', Courier, monospace;
+		-width: 100%;
+		padding: 10px;
+	}
+
+	.input {
+		font-family: 'Courier New', Courier, monospace;
+		width: 100%;
 	}
 </style>
 
 <body>
 	<div class="container">
-		<h1 align="center">Weather station</h1>
+		<div class="header">Weather station</div>
+		<hr>
 		<form class="form" action="/param" method="post">
-			<table class="iksweb">
+			<table class="tab">
 				<tbody>
 					<tr>
-						<td>AP SSID:</td>
-						<td><input type='text' name="ap_ssid" /></td>
+						<td width="40%">AP SSID:</td>
+						<td width="60%"><input type='text' class="input" name="ap_ssid" /></td>
 					</tr>
 					<tr>
 						<td>AP PASS:</td>
-						<td><input type="password" name="ap_pass" /></td>
+						<td><input type="password" class="input" name="ap_pass" /></td>
 					</tr>
 					<tr>
 						<td>City:</td>
-						<td><input type="text" name="city" /></td>
+						<td><input type="text" class="input" name="city" /></td>
 					</tr>
 					<tr>
 						<td>Latitude:</td>
-						<td><input type='text' name="lat" /></td>
+						<td><input type='text' class="input" name="lat" /></td>
 					</tr>
 					<tr>
 						<td>Longitude:</td>
-						<td><input type='text' name="lon" /></td>
-					</tr>
-					<tr>
-						<td>hemisphere:</td>
-						<td><input type='text' name="hemisphere" /></td>
+						<td><input type='text' class="input" name="lon" /></td>
 					</tr>
 					<tr>
 						<td>Time zone</td>
@@ -66,19 +84,20 @@
 					</tr>
 					<tr>
 						<td>API key:</td>
-						<td><input type='text' name="api_key" /></td>
+						<td><input type='text' class="input" name="api_key" /></td>
 					</tr>
 					<tr>
 						<td>Test data:</td>
-						<td><input type='checkbox' name="test_data" /></td>
+						<td colspan="2"><input type='checkbox' class="input" name="test_data" /></td>
 					</tr>
 					<tr>
-						<td colspan="2"><input type="submit" value="Confirm"></td>
+						<td colspan="2"><input type="submit" class="input" value="Confirm"></td>
 					</tr>
 				</tbody>
 			</table>
 		</form>
-		<a href='/update'><button>Firmware...</button></a>
+		<hr>
+		<div><a href='/update'><button class="fwbutt">Firmware...</button></a></div>
 	</div>
 </body>
 

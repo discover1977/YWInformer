@@ -16,19 +16,8 @@ Web_Server::Web_Server(int port)
     _server = new WebServer(port);
 }
 
-//#define AP_SSID "WEATHER_STATION"
-//#define AP_PASS "0123456789"
-
 void Web_Server::begin(fs::FS *Filesystem)
 {
-    /*WiFi.mode(WIFI_AP);
-    log_i("Wi-Fi AP mode");
-    log_i("AP configuring...");
-    WiFi.softAP(AP_SSID, AP_PASS);
-    log_i("done");
-    IPAddress myIP = WiFi.softAPIP();
-    log_i("AP IP address: %s", myIP.toString().c_str());*/
-
     _filesystem = Filesystem;
     // Регистрация обработчиков
     _server->on(F("/"), hw_Website);
@@ -135,7 +124,6 @@ static void hw_param()
     _param.city = _server->arg(F("city"));
     _param.lat = _server->arg(F("lat")).toFloat();
     _param.lon = _server->arg(F("lon")).toFloat();
-    _param.hemisphere = _server->arg(F("hemisphere"));
     _param.time_zone = _server->arg(F("time_zone")).toInt();
     _param.update_interval = _server->arg(F("update_interval")).toInt();
     _param.api_key = _server->arg(F("api_key"));
@@ -148,7 +136,6 @@ static void hw_param()
     log_i("\tcity: %s", _param.city.c_str());
     log_i("\tlat: %s", String(_param.lat, 6).c_str());
     log_i("\tlon: %s", String(_param.lon, 6).c_str());
-    log_i("\themisphere: %s", _param.hemisphere.c_str());
     log_i("\ttest_data: %d", _param.test_data);
     log_i("\tapi_key: %s", _param.api_key.c_str());
     log_i("\tupdate_interval: %d", _param.update_interval);
@@ -185,8 +172,6 @@ static void hw_param()
                 jsonDoc["lat"] = _param.lat;
             if (_server->arg(F("lon")) != "")
                 jsonDoc["lon"] = _param.lon;
-            if (_server->arg(F("hemisphere")) != "")
-                jsonDoc["hemisphere"] = _param.hemisphere;
             if (_server->arg(F("time_zone")) != "")
                 jsonDoc["time_zone"] = _param.time_zone;
             if (_server->arg(F("update_interval")) != "")
