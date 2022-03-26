@@ -24,13 +24,6 @@
 #include "osans32b.h"
 #include "osans48b.h"
 
-/*#include "opensans8b.h"
-#include "opensans10b.h"
-#include "opensans12b.h"
-#include "opensans18b.h"
-#include "opensans24b.h"
-#include "opensans26b.h"*/
-
 #define PRINT_PARAM 1
 #define PRINT_DATA 0
 #define SAVE_LAST_DATA 1
@@ -509,7 +502,6 @@ void display_fact_weather()
   draw_thp_section(480, 70);
   draw_conditions_section(20, 50, weather.fact.icon, 0, LargeIcon);
   draw_sun_section(480, 330);
-  // draw_moon_section(510, 200, param.hemisphere);
 }
 
 void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure section
@@ -528,14 +520,29 @@ void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure
   y += osans12b.advance_y;
 
   setFont(osans24b);
-  drawString(x - xOffset, y, String(weather.fact.humidity) + "%", RIGHT);
+  int sw = drawString(x - xOffset, y, String(weather.fact.humidity) + "%", RIGHT);
+
+  uint8_t *data = load_file("blob.bin");
+  if (data != NULL)
+  {
+    Rect_t area = {
+        .x = x - xOffset - sw - 40,
+        .y = y,
+        .width = 36,
+        .height = 40};
+    epd_draw_grayscale_image(area, (uint8_t *)data);
+    free(data);
+  }
 
   int ex;
   ex = drawString(x + xOffset, y, String(weather.fact.pressure_mm), LEFT);
-  y += osans10b.advance_y / 2;
 
   setFont(osans10b);
-  drawString(x + xOffset + ex, y, "mm/Hg", LEFT);
+  //drawString(x + xOffset + ex, y, "mm/Hg", LEFT);
+  int exx = drawString(x + xOffset + ex, y, "mm", LEFT);
+  y += osans10b.advance_y / 2;
+  drawLine(x + xOffset + ex, y + 2, x + xOffset + ex + exx, y + 2, Black);
+  drawString(x + xOffset + ex, y, "Hg", LEFT);
 }
 
 void draw_sun_section(uint16_t x, uint16_t y)
@@ -592,24 +599,22 @@ int JulianDate(int d, int m, int y)
   return j;
 }
 
-void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part) // temperature, humidity, pressure section
+void draw_thp_forecast_section(uint16_t x, uint16_t y, uint8_t part)
 {
-  int xOffset = 90;
+  setFont(osans24b);
+  drawString(x, y, String(weather.forecast.parts[part].temp_avg) + " °C", CENTER);
+
   setFont(osans18b);
-  drawString(x - xOffset / 2, y + 20, String(weather.forecast.parts[part].temp_avg) + " °C", CENTER);
-  setFont(osans12b);
-  drawString(x - xOffset / 2, y + 50, String(weather.forecast.parts[part].feels_like) + " °C", CENTER);
+  drawString(x, y + 45, String(weather.forecast.parts[part].feels_like) + " °C", CENTER);
 
-  setFont(osans8b);
-  drawString(x - xOffset / 2, y + 65, String(weather.forecast.parts[part].temp_max) + " | " + String(weather.forecast.parts[part].temp_min), CENTER);
+  setFont(osans6b);
+  drawString(x, y + 73, "(ощущается)", CENTER);
 
   setFont(osans10b);
-  drawString(x + xOffset / 2, y + 25, String(weather.forecast.parts[part].humidity) + " %", CENTER);
-  setFont(osans10b);
-  drawString(x + xOffset / 2, y + 50, String(weather.forecast.parts[part].pressure_mm), CENTER);
+  drawString(x, y + 95, String(weather.forecast.parts[part].pressure_mm), CENTER);
 
-  setFont(osans8b);
-  drawString(x + xOffset / 2, y + 63, "mm/Hg", CENTER);
+  setFont(osans6b);
+  drawString(x, y + 110, "mm/Hg", CENTER);
 }
 
 uint8_t *load_file(String fileName)
@@ -705,7 +710,7 @@ void display_forecast_weather()
                       weather.forecast.parts[i].wind_speed,
                       weather.forecast.parts[i].wind_gust,
                       60, false);
-    draw_thp_forecast_section(i * xOffSet + 210, y + 40, i);
+    draw_thp_forecast_section(i * xOffSet + 210, y + 30, i);
   }
 }
 

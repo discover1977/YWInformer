@@ -66,11 +66,11 @@
 					</tr>
 					<tr>
 						<td>Latitude:</td>
-						<td><input type='text' class="input" name="lat" /></td>
+						<td><input id='input_lat' type='text' class="input" name="lat" /></td>
 					</tr>
 					<tr>
 						<td>Longitude:</td>
-						<td><input type='text' class="input" name="lon" /></td>
+						<td><input id='input_lon' type='text' class="input" name="lon" /></td>
 					</tr>
 					<tr>
 						<td>Time zone</td>
@@ -97,8 +97,24 @@
 			</table>
 		</form>
 		<hr>
+		<button class="fwbutt" onclick="get_location()">Get location</button>
 		<div><a href='/update'><button class="fwbutt">Firmware...</button></a></div>
 	</div>
 </body>
+
+<script>
+	var lat = 0.0;
+	var lon = 0.0;
+	function get_location() {
+		navigator.geolocation.getCurrentPosition(
+			function (position) {
+				lat = position.coords.latitude;
+				lon = position.coords.longitude;
+				document.getElementById('input_lat').value = lat;
+				document.getElementById('input_lon').value = lon;
+			}
+		);
+	}
+</script>
 
 </html>
