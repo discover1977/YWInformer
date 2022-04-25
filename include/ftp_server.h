@@ -6,7 +6,8 @@
 #include <SD.h>
 #include <SD_MMC.h>
 #include <SPIFFS.h>
-#include <ESP-FTP-Server-Lib.h>
+//#include <ESP-FTP-Server-Lib.h>
+#include <ESP8266FtpServer.h>
 
 #define T_FTPSrv_CPU        0
 #define T_FTPSrv_PRIOR      0
