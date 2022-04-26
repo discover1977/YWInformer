@@ -159,7 +159,7 @@ void setup()
         log_i("\ttest_data: %d", param.test_data);
         log_i("\tapi_key: %s", param.api_key.c_str());
         log_i("\tupdate_interval: %d", param.update_interval);
-        log_i("\time_zone: %d", param.time_zone);
+        log_i("\ttime_zone: %d", param.time_zone);
         log_i("\tap_ssid: %s", param.ap_ssid.c_str());
         log_i("\tap_pass: %s", param.ap_pass.c_str());
         log_i("param deserializeJson() success");
