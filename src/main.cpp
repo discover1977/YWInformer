@@ -180,7 +180,7 @@ void setup()
         log_i("api_key is empty");
       ap_config();
       server.begin(&SPIFFS);
-      //ftp.addFilesystem("SPIFFS", &SPIFFS);
+      ftp.addFilesystem("SPIFFS", &SPIFFS);
       ftp.begin();
       epd_poweron();
       epd_clear();
