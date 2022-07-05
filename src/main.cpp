@@ -509,7 +509,7 @@ void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure
   int xOffset = 20;
   setFont(osans48b);
   drawString(x, y, String(weather.fact.temp) + " °C", CENTER);
-  y += osans26b.advance_y;
+  y += osans26b.advance_y + 4;
 
   setFont(osans16b);
   drawString(x, y, String(weather.fact.feels_like) + " °C", CENTER);
@@ -535,7 +535,7 @@ void draw_thp_section(uint16_t x, uint16_t y) // temperature, humidity, pressure
   }
 
   int ex;
-  ex = drawString(x + xOffset, y, String(weather.fact.pressure_mm), LEFT);
+  ex = drawString(x + xOffset, y, String(weather.fact.pressure_mm), LEFT) + 5;
 
   setFont(osans10b);
   //drawString(x + xOffset + ex, y, "mm/Hg", LEFT);
